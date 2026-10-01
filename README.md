@@ -23,39 +23,33 @@
 
 The platform combines normal application authentication with a separate cryptographic authorization layer.
 
-A student may therefore be able to see that an exam exists while still being unable to decrypt its questions without receiving the protected exam key.
+A student may be allowed to see that an exam exists while still being unable to decrypt its questions without receiving the protected exam key.
 
-The project includes:
+SecureExam evolved from an original Python console-based cryptography course project into a complete full-stack web application.
 
-- Python / FastAPI backend
-- React frontend
-- MySQL persistence
-- JWT authentication
-- Role-based access control
-- Symmetric encryption
-- Public/private key concepts
-- Digital signatures
-- Encrypted student submissions
-- Tampering detection
-- Isolated public demo sandboxes
-
-> **Educational project:** the Kyber-style and Falcon-style modules are self-contained course implementations used to demonstrate cryptographic concepts. They are not official production implementations of the corresponding standards.
+> **Educational project:** the Kyber-style and Falcon-style modules are self-contained implementations designed to demonstrate public/private key concepts and digital signatures. They are not official production implementations of the corresponding standards.
 
 ---
 
 ## Key Features
 
-- **Lecturer dashboard** for creating, encrypting, publishing, and managing exams
-- **Authorized student access** with signature verification, exam-key recovery, and decryption
-- **Unauthorized student access** where ciphertext is visible but the exam key is unavailable
-- **Encrypted student submissions** stored as ciphertext in MySQL
-- **Lecturer-controlled decryption** of submitted answers
-- **Fresh IV generation** for student answer encryption
-- **Digital signature verification** before exam decryption
-- **Tampering detection** when encrypted exam data is modified
-- **JWT authentication and role-based access control**
-- **One-click demo login** for the main roles
-- **Isolated browser demo sessions** so different visitors do not modify each other's demo data
+- **Python/FastAPI backend**
+- **React frontend**
+- **MySQL persistence**
+- **JWT authentication**
+- **Role-based access control**
+- **Lecturer exam creation and publishing**
+- **Authorized-student decryption**
+- **Unauthorized-student ciphertext-only access**
+- **Serpent-style / OFB encryption**
+- **Kyber-style public/private key delivery**
+- **Falcon-style digital signatures**
+- **Encrypted student submissions**
+- **Fresh IV generation for each submitted answer**
+- **Lecturer-controlled submission decryption**
+- **Tampering detection**
+- **One-click demo login**
+- **Isolated public demo sandboxes**
 
 ---
 
@@ -69,7 +63,7 @@ The project includes:
 | Authentication | JWT, Argon2 |
 | Cryptography | Serpent-style / OFB, Kyber-style, Falcon-style |
 | Testing | Pytest, HTTPX, ESLint |
-| Deployment Ready | Docker, Vercel SPA configuration |
+| Deployment Ready | Docker, Vercel configuration |
 
 ---
 
@@ -100,9 +94,9 @@ Student opens exam
                 → Decrypt exam
 ```
 
-Student answers are also encrypted before storage.
+Student answers are encrypted before storage and use a **fresh IV for every submission**.
 
-Each submitted answer receives a **fresh IV**, and plaintext answers are not persisted in the submissions table.
+Plaintext answers are not persisted in the submissions table.
 
 ---
 
@@ -118,7 +112,7 @@ One-click access to Lecturer, Authorized Student, and Unauthorized Student demo 
 
 ### Lecturer Dashboard
 
-Lecturers can create new exams and manage published examinations.
+Lecturers can create and manage published examinations.
 
 ![Lecturer Dashboard](docs/screenshots/lecturer-dashboard.png)
 
@@ -126,7 +120,7 @@ Lecturers can create new exams and manage published examinations.
 
 ### Authorized Student
 
-The authorized student successfully verifies the signature, recovers the exam key, and decrypts the examination.
+The authorized student verifies the signature, recovers the exam key, and decrypts the examination.
 
 ![Authorized Student](docs/screenshots/authorized-student.png)
 
@@ -150,7 +144,7 @@ Student answers are stored as ciphertext. The lecturer can decrypt a submission 
 
 ### Tampering Detection
 
-The original encrypted exam passes signature verification, while a modified copy fails.
+The original encrypted exam passes signature verification, while a modified copy fails verification.
 
 ```text
 Original signature: VALID
@@ -170,7 +164,7 @@ JWT                → Who is logged in?
 Demo session token → Which sandbox belongs to this browser?
 ```
 
-This allows one visitor to test a complete flow:
+A single visitor can therefore test the complete flow:
 
 ```text
 Lecturer
@@ -232,101 +226,9 @@ SecureExam/
 
 ---
 
-## Local Setup
-
-### 1. Create MySQL Database
-
-```sql
-CREATE DATABASE secureexam
-CHARACTER SET utf8mb4
-COLLATE utf8mb4_unicode_ci;
-```
-
----
-
-### 2. Backend
-
-```powershell
-cd backend
-
-python -m venv .venv
-
-.\.venv\Scripts\Activate.ps1
-
-pip install -r requirements.txt
-
-Copy-Item .env.example .env
-```
-
-Update `backend/.env` with your MySQL credentials and JWT secret.
-
-Then run:
-
-```powershell
-python init_db.py
-python seed_demo.py
-uvicorn app.main:app --reload
-```
-
-Backend:
-
-```text
-http://127.0.0.1:8000
-```
-
-Swagger:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
----
-
-### 3. Frontend
-
-Open another terminal:
-
-```powershell
-cd frontend
-
-npm install
-
-Copy-Item .env.example .env
-
-npm run dev
-```
-
-Open:
-
-```text
-http://localhost:5173
-```
-
----
-
-## Testing
-
-### Backend
-
-```powershell
-cd backend
-pytest
-```
-
-### Frontend
-
-```powershell
-cd frontend
-npm run lint
-```
-
----
-
 ## Security Notes
 
-SecureExam is an educational security project.
-
-The project demonstrates:
+SecureExam is an educational security project demonstrating:
 
 - symmetric encryption,
 - public/private key concepts,
@@ -335,25 +237,7 @@ The project demonstrates:
 - encrypted database storage,
 - and tampering detection.
 
-For a real production system, additional protections would be required, such as dedicated key-management infrastructure, encrypted private-key storage, secret rotation, monitoring, and further application hardening.
-
----
-
-## Original Course Version
-
-The `legacy_console/` directory preserves the original Python console-based cryptography project.
-
-The current web version extends that work into a full-stack platform with:
-
-- React UI
-- Python/FastAPI REST API
-- MySQL database
-- JWT authentication
-- role-based access
-- encrypted submissions
-- digital-signature verification
-- tampering detection
-- public demo isolation
+For a real production system, additional security measures would be required, including secure key-management infrastructure, encrypted private-key storage, secret rotation, monitoring, and further application hardening.
 
 ---
 
