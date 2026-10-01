@@ -1,53 +1,121 @@
 # SecureExam — Encrypted Examination Portal
 
-SecureExam is a full-stack educational security project built with **React, FastAPI and MySQL**. It demonstrates encrypted exam distribution, per-student key delivery, digital signatures, encrypted submissions, role-based access and an isolated public demo workflow.
+<p align="center">
+  <strong>Full-stack educational security platform for encrypted exam distribution, protected key delivery, signed exam content, and encrypted student submissions.</strong>
+</p>
 
-## Main security flow
+<p align="center">
+  <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white" alt="React" />
+  <img src="https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi&logoColor=white" alt="FastAPI" />
+  <img src="https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white" alt="Python" />
+  <img src="https://img.shields.io/badge/MySQL-Database-4479A1?logo=mysql&logoColor=white" alt="MySQL" />
+  <img src="https://img.shields.io/badge/JWT-Authentication-000000?logo=jsonwebtokens&logoColor=white" alt="JWT" />
+</p>
 
-- **Serpent-style + OFB** encrypts exam questions and student answers.
-- **Kyber-style public/private keys** protect the symmetric exam key separately for each authorized student.
-- **Falcon-style digital signatures** sign the encrypted exam and detect tampering before decryption.
-- Every student can see published exam metadata.
-- Authorized students receive a protected exam-key package and can decrypt the questions.
-- Unauthorized students receive the encrypted exam but no exam-key package, so they only see ciphertext.
-- Student answers are encrypted with a fresh IV before storage.
-- The lecturer sees encrypted submissions first and explicitly decrypts them.
-- Plaintext exam questions and plaintext submissions are not persisted in MySQL.
+## Overview
 
-> The Kyber-style and Falcon-style modules are self-contained educational course implementations. They are not production implementations of the official cryptographic standards.
+**SecureExam** is a full-stack examination portal built with **React, FastAPI, Python, SQLAlchemy, and MySQL**. The project demonstrates how cryptographic concepts can be integrated into a complete web workflow involving lecturers, authorized students, unauthorized students, encrypted submissions, role-based access, and tampering detection.
+
+The system combines application-level authentication with a separate cryptographic authorization layer: a student may be allowed to see that an exam exists while still being unable to decrypt its content without the protected exam key.
+
+> **Educational project:** the Kyber-style and Falcon-style modules are self-contained course implementations designed to demonstrate public/private key concepts and digital signatures. They are **not production implementations of the official cryptographic standards**.
+
+## Key Features
+
+- **Role-based authentication** for lecturers, students, and administrators using JWT.
+- **Exam creation and publishing** through a React lecturer dashboard.
+- **Serpent-style / OFB encryption** for exam content and student answers.
+- **Kyber-style public/private key delivery** of the symmetric exam key to authorized students only.
+- **Falcon-style digital signatures** to verify exam authenticity and integrity before decryption.
+- **Authorized-student workflow:** verified signature → exam-key recovery → decrypted questions.
+- **Unauthorized-student workflow:** published exam metadata and ciphertext are visible, but no exam key is provided.
+- **Encrypted submissions:** answers are encrypted with a fresh IV before being stored in MySQL.
+- **Lecturer-controlled decryption:** lecturers initially see ciphertext and explicitly decrypt a submission when required.
+- **Tampering demonstration:** modifying encrypted exam content causes signature verification to fail.
+- **Isolated public demo sandboxes:** different visitors can test the same demo roles without modifying each other's data.
+
+## Security Workflow
+
+```text
+Lecturer creates exam
+        │
+        ▼
+Generate symmetric exam key + IV
+        │
+        ▼
+Serpent-style / OFB encryption
+        │
+        ├──────────────► Encrypted exam stored in MySQL
+        │
+        ▼
+Falcon-style signature
+        │
+        ▼
+For each authorized student
+        │
+        ▼
+Protect exam key using that student's
+Kyber-style public key
+        │
+        ▼
+Student opens exam
+        │
+        ├─ Signature invalid ─────► Reject / tampering detected
+        │
+        ├─ No key package ────────► Ciphertext only
+        │
+        └─ Valid key package ─────► Recover key → decrypt exam
+```
+
+Student submissions follow the same symmetric exam key but use a **fresh IV for every answer**. Plaintext answers are returned only when explicitly decrypted and are not persisted in the submissions table.
 
 ## Public Demo Sandbox
 
-The one-click demo buttons do **not** expose passwords in the browser.
-
-On the first demo login, the backend creates a temporary private sandbox and returns a random `demo_session_token`. The browser keeps that token separately from the JWT.
-
-- JWT = which role is currently logged in.
-- Demo session token = which private demo workspace this browser belongs to.
-
-This allows a visitor to:
-
-1. Enter as **Lecturer**, create and publish an exam.
-2. Log out / switch role.
-3. Enter as **Authorized Student** and see the same exam decrypted.
-4. Submit an encrypted answer.
-5. Switch to **Unauthorized Student** and see the same exam as ciphertext only.
-6. Switch back to **Lecturer** and decrypt the student's submission.
-
-Different browsers receive different sandboxes, so visitors do not overwrite each other's demo data. A sandbox expires after `DEMO_SESSION_HOURS` (12 hours by default). Expired sandboxes are cleaned automatically during future demo logins. The login page also provides **Start fresh** to discard the current browser sandbox.
-
-## Project structure
+The public-demo architecture separates the **login identity** from the **browser demo workspace**.
 
 ```text
-SecureExam_Final_Public_Demo/
+JWT                → Who is logged in now?
+Demo session token → Which temporary sandbox belongs to this browser?
+```
+
+A visitor can therefore:
+
+```text
+Lecturer → create and publish an exam
+   ↓ logout
+Authorized Student → open the same exam and submit an encrypted answer
+   ↓ logout
+Unauthorized Student → see the same exam as ciphertext only
+   ↓ logout
+Lecturer → inspect and decrypt the encrypted submission
+```
+
+A different browser receives a different sandbox, preventing public visitors from overwriting each other's demo data.
+
+## Tech Stack
+
+| Layer | Technologies |
+|---|---|
+| Frontend | React, Vite, React Router, Lucide React, CSS |
+| Backend | FastAPI, Python, Pydantic |
+| Database | MySQL, SQLAlchemy, PyMySQL |
+| Authentication | JWT, Argon2 password hashing |
+| Cryptography | Serpent-style/OFB, Kyber-style key delivery, Falcon-style signatures |
+| Testing | Pytest, HTTPX, ESLint |
+| Deployment-ready | Docker, Vercel SPA configuration, environment variables |
+
+## Project Structure
+
+```text
+SecureExam/
 ├── backend/
 │   ├── app/
-│   │   ├── api/
-│   │   ├── core/
-│   │   ├── crypto/
-│   │   ├── models/
-│   │   ├── schemas/
-│   │   └── services/
+│   │   ├── api/          # FastAPI routes
+│   │   ├── core/         # DB, security, dependencies, demo configuration
+│   │   ├── crypto/       # Educational crypto modules
+│   │   ├── models/       # SQLAlchemy models
+│   │   ├── schemas/      # Pydantic schemas
+│   │   └── services/     # Business logic
 │   ├── tests/
 │   ├── Dockerfile
 │   ├── init_db.py
@@ -55,21 +123,63 @@ SecureExam_Final_Public_Demo/
 │   └── requirements.txt
 ├── frontend/
 │   ├── src/
+│   │   ├── api/
+│   │   ├── components/
+│   │   ├── context/
+│   │   ├── layouts/
+│   │   ├── pages/
+│   │   └── routes/
 │   ├── vercel.json
 │   └── package.json
-├── legacy_console/
+├── legacy_console/       # Original console-based course project
+├── docs/
 └── README.md
 ```
 
-## Local setup
+## Screenshots
+
+> Add screenshots to `docs/screenshots/` and replace the placeholders below.
+
+### Login & Demo Roles
+
+```text
+One-click roles: Lecturer · Authorized Student · Unauthorized Student
+```
+
+### Lecturer Dashboard
+
+```text
+Create exams · Encrypt & publish · Manage authorized students
+```
+
+### Authorized vs Unauthorized Student
+
+```text
+Authorized student   → Signature ✓ Key ✓ Decryption ✓
+Unauthorized student → Signature ✓ Key unavailable · Ciphertext only
+```
+
+### Encrypted Submission & Tampering Detection
+
+```text
+Encrypted answer → Lecturer decrypts on demand
+Original signature: VALID
+Tampered copy: INVALID
+```
+
+## Local Setup
+
+### 1. Database
 
 Create a MySQL database:
 
 ```sql
-CREATE DATABASE secureexam CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE secureexam
+CHARACTER SET utf8mb4
+COLLATE utf8mb4_unicode_ci;
 ```
 
-Backend (Windows PowerShell):
+### 2. Backend
 
 ```powershell
 cd backend
@@ -82,7 +192,15 @@ python seed_demo.py
 uvicorn app.main:app --reload
 ```
 
-Frontend:
+Backend endpoints:
+
+```text
+API:     http://127.0.0.1:8000
+Swagger: http://127.0.0.1:8000/docs
+Health:  http://127.0.0.1:8000/health
+```
+
+### 3. Frontend
 
 ```powershell
 cd frontend
@@ -94,14 +212,12 @@ npm run dev
 Open:
 
 ```text
-Frontend: http://localhost:5173
-API:      http://127.0.0.1:8000
-Swagger:  http://127.0.0.1:8000/docs
+http://localhost:5173
 ```
 
-## Environment variables
+## Environment Variables
 
-Backend local development uses the individual MySQL variables:
+Backend:
 
 ```text
 DB_HOST
@@ -109,17 +225,7 @@ DB_PORT
 DB_NAME
 DB_USER
 DB_PASSWORD
-```
-
-Cloud deployments can use one connection string instead:
-
-```text
-DATABASE_URL=mysql+pymysql://USER:PASSWORD@HOST:PORT/DATABASE
-```
-
-Other important backend variables:
-
-```text
+DATABASE_URL
 JWT_SECRET_KEY
 JWT_ALGORITHM
 JWT_EXPIRE_MINUTES
@@ -135,66 +241,46 @@ Frontend:
 VITE_API_BASE_URL
 ```
 
-Never commit the real `.env` files. Only `.env.example` belongs in Git.
-
-## Public deployment layout
-
-Recommended architecture:
-
-```text
-Visitor
-  ↓
-React / Vercel
-  ↓ HTTPS
-FastAPI / container host
-  ↓
-Cloud MySQL
-```
-
-For the frontend, set:
-
-```text
-VITE_API_BASE_URL=https://YOUR-BACKEND-DOMAIN
-```
-
-For the backend, set at minimum:
-
-```text
-DATABASE_URL=...
-JWT_SECRET_KEY=...
-FRONTEND_URLS=https://YOUR-FRONTEND-DOMAIN
-DEMO_SESSION_HOURS=12
-```
-
-The backend Dockerfile automatically runs `init_db.py` and `seed_demo.py` before starting Uvicorn, so a new cloud database receives the required tables, demo identities and educational cryptographic key pairs.
-
-`frontend/vercel.json` contains the SPA rewrite needed for direct React Router URLs and browser refreshes.
-
-## Demo identities
-
-The public UI offers one-click roles:
-
-- Lecturer — David
-- Authorized Student — Alice
-- Unauthorized Student — Eve
-
-Bob is also available as an authorized demo student when the lecturer chooses authorized students for a newly created exam.
-
-Optional manual demo passwords can be configured in `backend/.env` for local testing. Public deployments should keep `ALLOW_DEMO_PASSWORD_LOGIN=false`; one-click demo login does not send demo passwords to the frontend.
+Real `.env` files are excluded from Git. Only `.env.example` files belong in the repository.
 
 ## Tests
 
-Backend crypto workflow:
+Backend:
 
 ```powershell
 cd backend
 pytest
 ```
 
-Frontend validation:
+Frontend:
 
 ```powershell
 cd frontend
 npm run lint
 npm run build
 ```
+
+## Deployment
+
+The repository is prepared for a deployment architecture such as:
+
+```text
+React / Vercel
+      ↓ HTTPS
+FastAPI / container host
+      ↓
+Cloud MySQL
+```
+
+A public **Live Demo** link will be added after deployment.
+
+## Original Course Version
+
+The `legacy_console/` directory preserves the original console-based cryptography project. The current web platform extends that work into a full-stack application with authentication, database persistence, role-specific interfaces, encrypted submissions, and isolated public demo sessions.
+
+## Author
+
+**Adel Bashir**  
+B.Sc. Software Engineering student — Braude College of Engineering
+
+GitHub: [adilbashir017-ux](https://github.com/adilbashir017-ux)
