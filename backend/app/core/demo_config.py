@@ -1,0 +1,17 @@
+DEMO_LECTURER_ID = 1
+DEMO_ADMIN_ID = 2
+DEMO_ALICE_ID = 1001
+DEMO_BOB_ID = 1002
+DEMO_EVE_ID = 9999
+
+DEMO_STUDENT_IDS = {
+    DEMO_ALICE_ID,
+    DEMO_BOB_ID,
+    DEMO_EVE_ID,
+}
+
+DEMO_ROLE_TO_USER_ID = {
+    "lecturer": DEMO_LECTURER_ID,
+    "authorized_student": DEMO_ALICE_ID,
+    "unauthorized_student": DEMO_EVE_ID,
+}
